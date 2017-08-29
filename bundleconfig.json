@@ -1,0 +1,31 @@
+[{
+    "outputFileName": "www/css/scripts.css",
+  "inputFiles": [
+    "www/css/kendo/kendo.common.min.css",
+    "www/css/kendo/kendo.default.min.css",
+    "www/css/kendo/kendo.mobile.all.min.css",
+    "www/css/bootstrap.min.css",
+    "www/css/font-awesome.min.css",
+    "www/css/jquery-confirm.css"
+  ],
+    "minify": { "enabled": false },
+    "includeInProject": false,
+    "sourceMaps": false
+  }, {
+    "outputFileName": "www/scripts/scripts.js",
+    "inputFiles": [
+      //"www/scripts/platformOverrides.js",
+      //"www/scripts/plugins/jquery.min.js",
+      //"www/scripts/plugins/kendo.all.min.js",
+      "www/scripts/plugins/bootstrap.min.js",
+      "www/scripts/plugins/jquery.bootstrap-touchspin.js",
+      "www/scripts/plugins/jszip.min.js",
+      "www/scripts/plugins/painlessfs.js",
+      "www/scripts/plugins/fileapi.js"
+      //"www/scripts/plugins/jquery-confirm.js"
+    ],
+    "minify": { "enabled": false },
+    "includeInProject": false,
+    "sourceMaps": false
+  }
+]
