@@ -1,0 +1,1 @@
+C:\Dev\Projectos\SplInvent\AppPackages\CordovaApp.Windows_0.1.100.1_arm_debug_Test\CordovaApp.Windows_0.1.100.1_arm_debug.appx

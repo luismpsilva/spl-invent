@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Deployment AppPlatformVersion="8.0" xmlns="http://schemas.microsoft.com/windowsphone/2012/deployment">
+  <DefaultLanguage code="en-US" xmlns="" />
+  <Languages xmlns="">
+    <Language code="en-US" />
+  </Languages>
+  <App Author="Luis Silva" BitsPerPixel="32" Description="A simple aplication." Genre="apps.normal" ProductID="{b0879050-8cd0-11e7-b665-53b25f7a359e}" Publisher="Luis Silva" PublisherID="{db093ed5-53b1-45f7-af72-751e8f36ab80}" RuntimeType="Silverlight" Title="SplInvent" Version="0.1.0" xmlns="">
+    <IconPath IsRelative="true" IsResource="false">ApplicationIcon.png</IconPath>
+    <Capabilities>
+      <Capability Name="ID_CAP_WEBBROWSERCOMPONENT" />
+      <Capability Name="ID_CAP_NETWORKING" />
+      <Capability Name="ID_CAP_ISV_CAMERA" />
+      <Capability Name="ID_CAP_MEDIALIB_PHOTO" />
+    </Capabilities>
+    <Tasks>
+      <DefaultTask Name="_default" NavigationPage="MainPage.xaml" />
+    </Tasks>
+    <Tokens>
+      <PrimaryToken TaskName="_default" TokenID="SplInventToken">
+        <TemplateFlip>
+          <SmallImageURI IsRelative="true" IsResource="false">Background.png</SmallImageURI>
+          <Count>0</Count>
+          <BackgroundImageURI IsRelative="true" IsResource="false">Background.png</BackgroundImageURI>
+          <Title>SplInvent</Title>
+          <BackContent />
+          <BackBackgroundImageURI />
+          <BackTitle />
+          <LargeBackgroundImageURI />
+          <LargeBackContent />
+          <LargeBackBackgroundImageURI />
+          <DeviceLockImageURI />
+          <HasLarge>false</HasLarge>
+        </TemplateFlip>
+      </PrimaryToken>
+    </Tokens>
+    <ScreenResolutions>
+      <ScreenResolution Name="ID_RESOLUTION_WVGA" />
+      <ScreenResolution Name="ID_RESOLUTION_WXGA" />
+      <ScreenResolution Name="ID_RESOLUTION_HD720P" />
+    </ScreenResolutions>
+  </App>
+</Deployment>
+<!-- WPSDK Version 8.0.9900 -->

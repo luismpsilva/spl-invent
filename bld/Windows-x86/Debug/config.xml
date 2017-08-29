@@ -32,7 +32,7 @@
         <vs:platformSpecificWidget id="com.cordova.splitinvent" platformName="windows" version="0.1.100.0" />
     </vs:platformSpecificValues>
     <preference name="SplashScreen" value="screen" />
-    <preference name="WindowsStorePublisherName" value="CN=SplInvent, Corp" />
+    <preference name="WindowsStorePublisherName" value="CN=SplInventCorp" />
     <preference name="WindowsStoreDisplayName" value="SplInvent" />
     <preference name="windows-target-version" value="8.1" />
     <preference name="ShowSplashScreenSpinner" value="false" />

@@ -10,7 +10,7 @@
   <Identity Name="com.cordova.splinvent" Publisher="CN=Apache Cordova Team" Version="0.1.100.0" ProcessorArchitecture="x86" />
   <Properties>
     <DisplayName>SplInvent</DisplayName>
-    <PublisherDisplayName>CN=SplInvent, Corp</PublisherDisplayName>
+    <PublisherDisplayName>CN=SplInventCorp</PublisherDisplayName>
     <Logo>images\StoreLogo.png</Logo>
   </Properties>
   <Prerequisites>

@@ -1,0 +1,184 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Security-Policy" content="default-src *; style-src 'self' http://* 'unsafe-inline' 'unsafe-eval'; script-src 'self' https://* http://* 'unsafe-inline' 'unsafe-eval'; img-src * 'self' data: https:;" />
+        
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="format-detection" content="telephone=no">
+        <meta name="msapplication-tap-highlight" content="no">
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+
+        <!--<link rel="stylesheet" type="text/css" href="css/kendo/kendo.common.min.css" />
+        <link rel="stylesheet" type="text/css" href="css/kendo/kendo.default.min.css" />
+        <link rel="stylesheet" type="text/css" href="css/kendo/kendo.mobile.all.min.css" />
+        <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
+        <link rel="stylesheet" type="text/css" href="css/font-awesome.min.css" />
+        <link rel="stylesheet" type="text/css" href="css/jquery-confirm.css" />-->
+        <link rel="stylesheet" type="text/css" href="css/scripts.css"/>
+        <link rel="stylesheet" type="text/css" href="css/index.css">
+
+        <title>LimeInvet</title>
+    </head>
+    <body style="background:rgb(39, 122, 166)">
+        <div id="my-overlay" class="hidden">
+            <div><p>My Title</p></div>
+            <i class="fa fa-times fa-3x" aria-hidden="true" onclick="showImageHandler(false)"></i>
+        </div>
+        <div class="spinner"></div>
+        <!--<div id="my-overlay"><img style="background-repeat: no-repeat;background-position: center center;"/><p></p></div>-->
+        <div id="view-inventario" data-role="view" data-stretch="true" data-title="Inventário" data-show="show_inventario" data-init="init_inventario"
+             style="display:none">
+            <header data-role="header">
+                <div data-role="navbar">
+                    <span data-role="view-title"></span>
+                    <a data-align="right" data-icon="exit" data-role="button" onclick="exitFromApp()">Sair</a>
+                </div>
+            </header>
+            <div id="parent">
+                <div id="gridInventario"></div>
+            </div>
+            <div data-role="footer">
+                <div data-role="tabstrip">
+                    <a data-icon="list" data-role="button" data-bind="invisible: mode, click: switchPicagem" data-mode="true" style="color:white">Picagem</a>
+                    <a data-icon="plus" data-role="button" data-bind="invisible: mode" href="#modalview-insert-artigo" data-rel="modalview">Adicionar</a>
+                    <a data-icon="cancel" data-role="button" data-bind="visible: mode, click: switchPicagem" data-mode="false">Cancelar</a>
+                    <a data-icon="save" data-role="button" data-bind="visible: mode, click: gravarPicagem">Gravar</a>
+                </div>
+            </div>
+        </div>
+        <div id="modalview-insert-artigo" data-role="modalview" data-open="open_ModalInsertArtigo" data-close="close_ModalInsertArtigo" style="width:100%;height:100%;display:none">
+            <div data-role="header">
+                <div data-role="navbar">
+                    <a data-role="button" data-align="left" data-icon="reply" data-click="closeModalView" data-viewname="modalview-insert-artigo">Voltar</a>
+                    <span>Inserir Artigo</span>
+                </div>
+            </div>
+            <form id="artigo-validator" style="padding:10px 0">
+                <div class="col-xs-12 col-sm-6">
+                    <div class="form-group">
+                        <label for="descArtigo">Descrição</label>
+                        <input id ="descArtigo" type="text" class="form-control input-lg" name="descArtigo" data-bind="value: DESCRICAO" required validationmessage="Obrigatório" />
+                        <span class="k-invalid-msg" data-for="descArtigo"></span>
+                    </div>
+                </div>
+                <div class="col-xs-12 col-sm-6">
+                    <div class="form-group">
+                        <label for="qtdArtigo">Quantidade</label>
+                        <input id="qtdArtigo" data-min="0" name="qtdArtigo" type="number" class="form-control input-lg" data-bind="value: QUANTIDADE" required validationmessage="Obrigatório" />
+                    </div>
+                    <span class="k-invalid-msg" data-for="qtdArtigo"></span>
+                </div>
+                <div class="col-xs-12">
+                    <div class="form-group">
+                        <div class="col-xs-12 col-sm-5" style="padding:0;">
+                            <div>
+                                <div class="input-group left">
+                                    <span class="input-group-btn" style="width:inherit;">
+                                        <span class="btn btn-default btn-file big-button" data-bind="css: { colorGreen: hasIMAGEM }">
+                                            <i class="fa fa-camera fa-3x"></i>
+                                            <input type="file" data-bind="click: selectImage" id="imgInp">
+                                            <strong>Nova Foto</strong>
+                                        </span>
+                                    </span>
+                                    <!--<input type="text" class="form-control input-lg hidden" readonly>-->
+                                </div>
+                                <div class="input-group right" style="padding-left:1.5em">
+                                    <span class="input-group-btn" style="width:inherit;">
+                                        <span class="btn btn-default btn-file big-button" data-bind="click: clearImage">
+                                            <i class="fa fa-times fa-3x"></i>
+                                            <strong>Remover</strong>
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xs-12 col-sm-7" style="padding:0">
+                            <img id='img-upload' align="middle" data-bind="visible: hasIMAGEM" 
+                                 style="margin-left: auto;margin-right: auto;display: block;padding:0.5em;max-width:800px" />
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div data-role="footer">
+                <div data-role="tabstrip">
+                    <a data-icon="save" data-role="button" data-bind="click: gravarArtigo" style="color:white">Gravar</a>
+                </div>
+            </div>
+        </div>
+        <script id="gridInventario-command-template" type="text/x-kendo-template">
+            #if(!obs_inventario.get("mode")){#
+                #if(QUANTIDADE_PICADA < 1){#
+                    <a class="k-button k-grid-remover" data-id="#:ID#">
+                        <i class="fa fa-trash-o" aria-hidden="true"></i>
+                        Remover
+                    </a>
+                #}#
+            #}else{#
+                <div style="text-align:center">
+                    <input type="checkbox" data-id="#:ID#"/>
+                </div>
+            #}#
+        </script>
+        <script type="text/javascript" src="/www/WinJS/js/base.js"></script>
+        <script type="text/javascript" src="cordova.js"></script>
+        <script type="text/javascript" src="scripts/platformOverrides.js"></script>
+        <script type="text/javascript" src="scripts/plugins/jquery.min.js"></script>
+        <script type="text/javascript" src="scripts/plugins/kendo.all.min.js"></script>
+        <script type="text/javascript" src="scripts/plugins/jquery-confirm.js"></script>
+        <script type="text/javascript" src="scripts/scripts.js"></script>
+        <script type="text/javascript" src="scripts/common.js"></script>
+        <script type="text/javascript" src="scripts/index.js"></script>
+        <script type="text/javascript" charset="utf-8">
+            if (typeof cordova === 'undefined') {
+                $(document).ready(function () {
+                    onDeviceReady();
+                });
+            }
+            else {
+                document.addEventListener('deviceready', onDeviceReady.bind(this), false);
+            }
+            function onDeviceReady() {
+                var dfd = $.Deferred();
+                if (typeof cordova !== 'undefined') {
+                    db = window.sqlitePlugin.openDatabase({ name: 'invent.db', location: 'default' });
+                    db.transaction(function (tx) {
+                        tx.executeSql('CREATE TABLE IF NOT EXISTS inventario (id integer primary key, descricao text, tipo text, quantidade integer, quantidade_picada integer, foto text)');
+                    }, function (error) {
+                        console.log('Error creating table: ' + error.message);
+                        dfd.resolve();
+                    }, function () {
+                        console.log('Table Created');
+                        dfd.resolve();
+                    });
+                    dataDirectory = cordova.file.externalApplicationStorageDirectory;
+                    if (cordova.plugins && cordova.plugins.Keyboard) {
+                        window.addEventListener('native.keyboardhide', function (e) {
+                            if (window.StatusBar) {
+                                StatusBar.hide();
+                            }
+                        });
+                    }
+                    // esconde a Navigation Bar
+                    if (AndroidFullScreen) {
+                        AndroidFullScreen.immersiveMode(function (args) {
+                            console.log("IMMERSIVEMODE: ON");
+                        }, function (args) {
+                            console.log("!!ERROR!! IMMERSIVEMODE");
+                        });
+                    }
+                    if (cordova.file && cordova.file.externalApplicationStorageDirectory)
+                        dataDirectory = cordova.file.externalApplicationStorageDirectory;                    
+
+                } else {
+                    dfd.resolve();
+                }
+                dfd.then(function () {
+                    app = new kendo.mobile.Application(document.body, { skin: "nova" });
+                    $(".spinner").remove();
+                });
+            };
+        </script>
+    </body>
+</html>
