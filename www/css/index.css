@@ -210,6 +210,7 @@ h1 {
     z-index: 1000;
     background-repeat: no-repeat;
     background-position: center center;
+    background-size:contain
 }
 
 #my-overlay p {
@@ -242,6 +243,27 @@ h1 {
 .input-group-lg>.form-control, .input-group-lg>.input-group-addon, .input-group-lg>.input-group-btn>.btn{
     padding:10px 20px!important;
 }
+.ddTipoArtigo div{
+    height:43px!important;
+}
+
+.ddTipoArtigo .k-dropdown-wrap .k-select{
+    line-height:3em!important;
+}
+.ddTipoArtigo span{
+    height:46px!important;
+    line-height:2.5em!important;
+}
+#ddTipoArtigo-list{
+    top:0;
+}
+#ddTipoArtigo-list .km-nova .km-actionsheet, .km-nova .km-popup .k-list-container{
+    max-height:100%!important;
+}
+#ddTipoArtigo-list .k-list-scroller{
+    height:auto!important;
+}
+
 
 /* Buttons */
 .big-button{
@@ -256,6 +278,13 @@ h1 {
 .colorGreen{
     color:green;
 }
+.color-DarkGreen{
+    color:darkgreen
+}
+
+.color-DarkRed{
+    color:darkred;
+}
 
 /*Floats*/
 
@@ -264,4 +293,10 @@ h1 {
 }
 .right{
     float:right;
+}
+
+/* Text */
+
+.text-center{
+    text-align:center;
 }

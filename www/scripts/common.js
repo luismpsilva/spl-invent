@@ -48,8 +48,8 @@ function notificacao(mensagem, tipo, title, autoClose, confirm) {
     } else {
         if (!$(document).data("kendoNotification")) {
             $(document).kendoNotification({
-                stacking: "up",
-                autoHideAfter: 5000,
+                stacking: "down",
+                autoHideAfter: 3000,
                 animation: {
                     open: {
                         effects: "slideIn:left"
@@ -161,6 +161,41 @@ function $confirm(message, confirmCallback, title, buttonLabels, event, closeIco
     }
 }
 /****************************************** MODAL GENERIC FUNCTIONS *****************************************/
+function openModalView(args, viewname, dataItem) {
+    if (viewname && $("#" + viewname).length > 0 && $("#" + viewname).data("kendoMobileModalView")) {
+        if (args && args.target !== args.currentTarget) {
+            args.target = args.currentTarget;
+        }
+
+        if (dataItem) {
+            args.dataItem = dataItem;
+        }
+        $("#" + viewname).data("kendoMobileModalView").trigger("open", args);
+        $("#" + viewname).kendoMobileModalView("open");
+    }
+
+    // origem da chamada ===================
+    //if (args) {
+    //    var target = args && args.target ? args.target : null;
+    //    if (target && $(target).data("modalview")) {
+    //        $(args.sender).data("caller", $(target).data("modalview"));
+    //        $(args.sender).data("open_next", true);
+
+    //        if ($(args.sender) && $(args.sender).attr('id')) {
+    //            $($(args.sender).attr('id')).data('modalview', $(target).data("modalview"));
+    //        }
+
+    //        closeModalView(null, $(target).data("modalview"));
+    //    }
+    //    else {
+    //        $(args.sender).data("open_next", false);
+    //        $(args.sender).data("caller", null);
+    //        if (args && args.sender && args.sender.id)
+    //            $(args.sender.id).data('modalview', null);
+    //    }
+    //}
+    //======================================
+}
 function closeModalView(args, viewname) {
     if (args) {
         if (args.button) {
@@ -233,17 +268,53 @@ function removeFromDb(query, fields) {
         });
     }
 }
-function updateFromDb(query, fields) {
-    startTransation().then(function (tr) {
-        if (tr) {
-            tr.executeSql(query, fields, function (tx, res) {
-                console.log("insertId: " + res.insertId);
-                notificacao(res.rowsAffected + " Registos actualizado(s) com sucesso!", "success", null, true);
-            },
+function clearTable(table) {
+    return $.Deferred(function () {
+        var that = this;
+        startTransation().then(function (tr) {
+            tr.executeSql("DELETE FROM " + table, [], function (tx, res) {
+                notificacao("Removido com sucesso " + res.rowsAffected + " registo(s).", "success", null, true);
+                that.resolve();
+            },            
             function (tx, error) {
-                notificacao('UPDATE error: [updateFromDb] ' + error.message, "error", 'Ups...');
+                notificacao("DELETE error: [clearTable]: " + error.message, "error", 'Ups...');
             });
-        }
+        });
+    });
+}
+function updateFromDb(query, fields, isMultiple) {
+    return $.Deferred(function () {
+        var that = this;
+        startTransation().then(function (tr) {
+            if (!isMultiple) {
+                tr.executeSql(query, fields, function (tx, res) {
+                    console.log("insertId: " + res.insertId);
+                    notificacao(res.rowsAffected + " Registos actualizado(s) com sucesso!", "success", null, true);
+                    that.resolve();
+                }, cbErrorTransaction);
+            }
+            else {
+                var regActualizados = 0, promises = [], promCount = 0;
+                Loading(true);
+                for (var i = 0, length = isMultiple.length; i < length; i++) {
+                    var dfd = new $.Deferred(); promises.push(dfd);
+                    tr.executeSql(isMultiple[i].query, isMultiple[i].fields, function (tx, res) {
+                        regActualizados++;
+                        console.log("insertId: " + res.insertId);
+                        promises[promCount].resolve();
+                        promCount++;
+                    }, function (tx, error) {
+                        promises[promCount].resolve();
+                        promCount++;
+                    });
+                }
+                $.when.apply(undefined, promises).then(function () {
+                    Loading();
+                    notificacao(regActualizados + " Registos actualizado(s) com sucesso!", "success", null, true);
+                    that.resolve();
+                });
+            }
+        });
     });
 }
 function Count(tr, table) {
@@ -256,24 +327,62 @@ function Count(tr, table) {
         });
     });
 }
-function closeDB() {
-    db.close(function () {
-        console.log("DB closed!");
-    }, function (error) {
-        console.log("Error closing DB:" + error.message);
+function ListTables() {
+    return $.Deferred(function () {
+        var that = this;
+        startTransation().then(function (tr) {
+            tr.executeSql("SELECT name FROM sqlite_master WHERE type='table'", [], function (tx, resultSet) {
+                try {
+                    var data = [];
+                    if (resultSet.rows.length > 0) {
+                        for (var x = 0; x < resultSet.rows.length; x++) {
+                            data.push(new TABELS(resultSet.rows.item(x)));
+                        }
+                    }
+                    that.resolve(data);
+                } catch (ex) {
+                    notificacao('Erro ao criar objecto [ListTable]: ' + ex.message, 'error', 'Ups...');
+                }
+            }, cbErrorTransaction);
+        });
     });
+}
+function closeDB() {
+    return $.Deferred(function () {
+        var that = this;
+        db.close(function () {
+            console.log("DB closed!");
+            that.resolve()
+        }, function (error) {
+            console.log("Error closing DB:" + error.message);
+            that.resolve()
+        });
+    })
+}
+function cbErrorTransaction(tx, error) {
+    notificacao("Ocorreu um erro ao executar o sql: " + error.message, "error", 'Ups...');
+    Loading();
 }
 /********************************************** OBJECT CLASSES **********************************************/
 function INVENTARIO(data) {
     this.ID = data.id;
     this.DESCRICAO = data.descricao;
+    this.ID_TIPO = data.id_tipo;
     this.TIPO = data.tipo;
     this.QUANTIDADE = data.quantidade;
     this.QUANTIDADE_PICADA = data.quantidade_picada;
-    this.FOTO = data.foto;
+    this.FOTO = (data.foto && data.foto != 'null') ? data.foto : null;
     //return this;
 }
-/******************************************* EMAIL FUNCTIONS *******************************************/
+function TIPO(data) {
+    this.ID = data.id;
+    this.DESC_TIPO = data.desc_tipo;
+    this.DESCRICAO = data.descricao
+}
+function TABELS(data) {
+    this.TABLE = data.name;
+}
+/********************************************** EMAIL FUNCTIONS *********************************************/
 function openEmail(data) {
     return $.Deferred(function () {
         var that = this;
@@ -311,10 +420,37 @@ function mailAvailable() {
         });
     });
 }
+/*********************************************** DD FUNCTIONS ***********************************************/
+function dd_addNewTipo(widgetId, value) {
+    var widget = $("#" + widgetId).getKendoDropDownList();
+    var dataSource = widget.dataSource;
+    if (confirm("Tem a certeza?")) {
+        startTransation().then(function (tx) {
+            var query = "INSERT INTO tipo (desc_tipo) VALUES ('" + value + "')";
+            tx.executeSql(query, [], function (tx, res) {
+                dataSource.add({
+                    ID: res.insertId,
+                    DESC_TIPO: value
+                });
+                dataSource.one("sync", function () {
+                    widget.select(dataSource.view().length - 1);
+                });
+                dataSource.sync();
+                notificacao("Inserido com sucesso.", "success", null, true);
+                Loading();
+            }, cbErrorTransaction);
+        }, function (error) {
+            notificacao("Erro de transaction [dd_addNewTipo]: " + error.message, "error", 'Ups...');
+            Loading();
+        });
+    }
+};
 /******************************************* APP GLOBAL FUNCTIONS *******************************************/
 function exitFromApp() {
-    if (navigator && navigator.app)
-        navigator.app.exitApp();
+    closeDB().then(function () {
+        if (navigator && navigator.app)
+            navigator.app.exitApp();
+    });
 }
 function saveAsBlob(dataURI) {
     var blob = dataURI; // could be a Blob object
@@ -347,3 +483,45 @@ function createGuid() {
         return v.toString(16);
     });
 }
+var isMobile = {
+    getUserAgent: function () {
+        return navigator.userAgent;
+    },
+    Android: function () {
+        return /Android/i.test(isMobile.getUserAgent()) && !isMobile.Windows();
+    },
+    BlackBerry: function () {
+        return /BlackBerry|BB10|PlayBook/i.test(isMobile.getUserAgent());;
+    },
+    iPhone: function () {
+        return /iPhone/i.test(isMobile.getUserAgent()) && !isMobile.iPad() && !isMobile.Windows();
+    },
+    iPod: function () {
+        return /iPod/i.test(isMobile.getUserAgent());
+    },
+    iPad: function () {
+        return /iPad/i.test(isMobile.getUserAgent());
+    },
+    iOS: function () {
+        return (isMobile.iPad() || isMobile.iPod() || isMobile.iPhone());
+    },
+    Opera: function () {
+        return /Opera Mini/i.test(isMobile.getUserAgent());
+    },
+    Windows: function () {
+        return /Windows Phone|IEMobile|WPDesktop|Edge/i.test(isMobile.getUserAgent());
+    },
+    KindleFire: function () {
+        return /Kindle Fire|Silk|KFAPWA|KFSOWI|KFJWA|KFJWI|KFAPWI|KFAPWI|KFOT|KFTT|KFTHWI|KFTHWA|KFASWI|KFTBWI|KFMEWI|KFFOWI|KFSAWA|KFSAWI|KFARWI/i.test(isMobile.getUserAgent());
+    },
+    any: function () {
+        return (isMobile.Android() || isMobile.BlackBerry() || isMobile.iOS() || isMobile.Opera() || isMobile.Windows());
+    }
+};
+var delay = (function () {
+    var timer = 0;
+    return function (callback, ms) {
+        clearTimeout(timer);
+        timer = setTimeout(callback, ms);
+    };
+})();

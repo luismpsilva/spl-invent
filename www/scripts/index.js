@@ -9,26 +9,35 @@ function init_inventario() {
         obs_inventario = new kendo.observable({
             mode: null,
             switchPicagem: function (e) {
-                var grid = $("#gridInventario").data("kendoGrid");
-                var modeType = $(e.currentTarget).data("mode");
-                if (this.mode) {
-                    this.set("mode", modeType);
-                    grid.hideColumn(3);
-                } else {
-                    this.set("mode", modeType);
-                    grid.showColumn(3);
+                var grid = $("#gridInventario").data("kendoGrid"), data = grid.dataSource.data(),bl;
+                for (var i = 0, length = data.length; i < length; i++) {
+                    if (!data[i].QUANTIDADE_PICADA) {
+                        bl = true;
+                        break;
+                    }
                 }
-                $("#gridInventario").data("kendoGrid").refresh();
+                if (data.length > 0 && bl) {
+                    this.set("mode", $(e.currentTarget).data("mode"));
+                    grid.refresh();
+                } else {
+                    notificacao("Todos os artigos já foram conferidos ou não existem artigos.", "info", null, true);
+                }
             },
             gravarPicagem: function () {
-                var checkedIDs = [], checked = $("#gridInventario [type='checkbox']:checked"),
-                    query = "UPDATE inventario WHERE id IN ";
+                var checked = $("#gridInventario [type='checkbox']:checked"), queryArray = [];
+                    //query = "UPDATE inventario WHERE id IN ";
                 for (var i = 0, length = checked.length; i < length; i++) {
-                    var id = $(checked[i]).data("id");
-                    if (id) checkedIDs.push(id);
+                    var id = $(checked[i]).data("id"), qtd = $(checked[i]).data("qtd");
+                    if (id) 
+                        queryArray.push({
+                            query:"UPDATE inventario set quantidade_picada = ? WHERE id = ?",
+                            fields: [qtd,id]
+                        })
                 }
-                query += "(" + checkedIDs + ")";
-                updateFromDb(query,[]);
+                updateFromDb(null, null, queryArray).then(function () {
+                    $("#gridInventario").data("kendoGrid").dataSource.read();
+                    obs_inventario.set("mode", false);
+                });
             }
         });
     }
@@ -38,8 +47,9 @@ function show_inventario() {
     if (!$("#gridInventario").data("kendoGrid")) {
         $("#gridInventario").kendoGrid({
             mobile: "phone",
+            height:"100%",
             scrollable: true,
-            selectable: "row",
+            selectable: "cell",
             toolbar: ["excel"],
             excel: {
                 fileName: "Inventario.xlsx",
@@ -53,7 +63,7 @@ function show_inventario() {
                     read: function (options) {
                         startTransation().then(function (tr) {
                             if (tr) {
-                                tr.executeSql("SELECT id,descricao,quantidade,quantidade_picada,foto FROM inventario", [], function (tx, resultSet) {
+                                tr.executeSql("SELECT id,descricao,id_tipo,tipo,quantidade,quantidade_picada,foto FROM inventario", [], function (tx, resultSet) {
                                     try {
                                         var data = [];
                                         if (resultSet.rows.length > 0) {
@@ -71,12 +81,19 @@ function show_inventario() {
                                 });
                             }
                             else {
-                                var d = [{ id: 1, descricao: "Teste 1", quantidade: 1, quantidade_picada: 0, foto: null },
-                                { id: 2, descricao: "Teste 2", quantidade: 1, quantidade_picada: 0, foto: null },
-                                { id: 3, descricao: "Teste 3", quantidade: 1, quantidade_picada: 0, foto: null }], data = [];
-                                data.push(new INVENTARIO(d[0]));
-                                data.push(new INVENTARIO(d[1]));
-                                data.push(new INVENTARIO(d[2]));
+                                var d = [{ id: 1, descricao: "Teste 1", tipo: "Tipo 1", quantidade: 3, quantidade_picada: 0, foto: null },
+                                { id: 2, descricao: "Teste 2", tipo: "Tipo 1", quantidade: 3, quantidade_picada: 0, foto: null },
+                                { id: 3, descricao: "Teste 3", tipo: "Tipo 1", quantidade: 3, quantidade_picada: 0, foto: null },
+                                { id: 4, descricao: "Teste 2", tipo: "Tipo 1", quantidade: 3, quantidade_picada: 0, foto: null },
+                                { id: 5, descricao: "Teste 3", tipo: "Tipo 1", quantidade: 3, quantidade_picada: 0, foto: null },
+                                { id: 6, descricao: "Teste 2", tipo: "Tipo 1", quantidade: 3, quantidade_picada: 0, foto: null },
+                                { id: 7, descricao: "Teste 3", tipo: "Tipo 1", quantidade: 3, quantidade_picada: 0, foto: null },
+                                { id: 8, descricao: "Teste 2", tipo: "Tipo 1", quantidade: 3, quantidade_picada: 0, foto: null },
+                                { id: 9, descricao: "Teste 3", tipo: "Tipo 1", quantidade: 3, quantidade_picada: 0, foto: null }], data = [];
+                                for (var i = 0, length = d.length; i < length; i++) {
+                                    data.push(new INVENTARIO(d[i]));
+                                }
+                                
                                 options.success(data);
                             }
                         });
@@ -86,10 +103,11 @@ function show_inventario() {
                             id: "ID",
                             fields: {
                                 ID: { nullable: false, editable: false },
+                                ID_TIPO: { type:"number", editable: false },
                                 DESCRICAO: { type: "string", editable: false },
+                                TIPO: { type: "string", editable: false },
                                 QUANTIDADE: { type: "number", editable: true },
                                 QUANTIDADE_PICADA: { type: "number", editable: true },
-                                TIPO: { type: "string", editable: false },
                             }
                         }
                     },
@@ -104,6 +122,9 @@ function show_inventario() {
                 }, {
                     title: "Descrição",
                     field: "DESCRICAO",
+                }, {
+                    title: "Tipo",
+                    field: "TIPO",
                 }, {
                     title: "Qtd.",
                     field: "QUANTIDADE",
@@ -177,8 +198,12 @@ function show_inventario() {
                     var cell = this.select();
                     $(cell).removeClass("k-state-selected");
                     var dataItem = this.dataItem(cell.closest("tr"));
-                    if (dataItem.FOTO != null)
-                        showImageHandler(true, { image: dataItem.FOTO, text: dataItem.DESCRICAO })
+                    if (cell.index() == 0) {
+                        if (dataItem.FOTO != null)
+                            showImageHandler(true, { image: dataItem.FOTO, text: dataItem.DESCRICAO })
+                    } else {
+                        openModalView(e, "modalview-insert-artigo", dataItem);
+                    }
                 }
             },
         });
@@ -202,15 +227,17 @@ function show_inventario() {
     });
     kendo.bind($("#view-inventario"), obs_inventario)
 }
-
 /*********************************************** OPEN MODALS **********************************************/
-function open_ModalInsertArtigo() {
+function open_ModalInsertArtigo(e) {
     if (!obs_artigo) {
         var obs_artigo = new kendo.observable({
+            aux_tipo: null,
+            aux_id_tipo:null,
             hasIMAGEM:false,
             IMAGEM: null,
-            DESCRICAO: null,
             QUANTIDADE: 1,
+            //TIPO: null,
+            ID:null,
             selectImage: function (e) {
                 e.preventDefault();
                 if (navigator.camera) {
@@ -287,30 +314,36 @@ function open_ModalInsertArtigo() {
                 if (validator.validate()) {
                     Loading(true);
                     //Gravar
-                    if (db) {
-                        db.transaction(function (tx) {
-                            var query = "INSERT INTO inventario (descricao, quantidade, foto) VALUES ('" + obs_artigo.get("DESCRICAO") + "','" + obs_artigo.get("QUANTIDADE") + "','" + obs_artigo.get("IMAGEM") + "')";
-                            tx.executeSql(query, [], function (tx, res) {
-                                notificacao("Inserido com sucesso.", "success", null, true);
-                                obs_artigo.reset();
-                                Loading();
-                            },
-                            function (tx, error) {
-                                notificacao("Erro ao inserir [gravarArtigo]: " + error.message, "error", 'Ups...');
-                                Loading();
+                    var aux_tipo = null, aux_id_tipo = null;
+                    startTransation().then(function (tr) {
+                        if ($("#ddTipoArtigo").data("kendoDropDownList").dataItem()) {
+                            aux_tipo = $("#ddTipoArtigo").data("kendoDropDownList").dataItem().DESC_TIPO;
+                            aux_id_tipo = $("#ddTipoArtigo").data("kendoDropDownList").dataItem().ID;
+                        }
+                        if(!obs_artigo.get("ID")) {
+                            db.transaction(function (tx) {
+                                var query = "INSERT INTO inventario (descricao, id_tipo, tipo, quantidade, foto) VALUES ('" +
+                                    obs_artigo.get("DESCRICAO") + "','" + aux_id_tipo + "','" + aux_tipo + "','" +
+                                    obs_artigo.get("QUANTIDADE") + "','" + obs_artigo.get("IMAGEM") + "')";
+                                tx.executeSql(query, [], function (tx, res) {
+                                    notificacao("Inserido com sucesso.", "success", null, true);
+                                    obs_artigo.reset();
+                                    Loading();
+                                },
+                                function (tx, error) {
+                                    notificacao("Erro ao inserir [gravarArtigo]: " + error.message, "error", 'Ups...');
+                                    Loading();
+                                });
                             });
-                        }, function (error) {
-                            notificacao("Erro de transaction [gravarArtigo]: " + error.message, "error", 'Ups...');
-                            Loading();
-                        }, function () {
-                            console.log('Transaction Ok [gravarArtigo]');
-                            Loading();
-                        });
-                    } else {
-                        notificacao("Inserido com sucesso.", "success", null, true);
-                        obs_artigo.reset();
-                        Loading();
-                    }
+                        }else{
+                            updateFromDb("UPDATE inventario set descricao = ?, quantidade = ?,id_tipo = ?, tipo = ?, foto =? WHERE id = ?",
+                                [obs_artigo.get("DESCRICAO"), obs_artigo.get("QUANTIDADE"),id_tipo, tipo, obs_artigo.get("IMAGEM"), obs_artigo.get("ID")]).then(function () {
+                                    //notificacao("Actualizado com sucesso.", "success", null, true);
+                                    obs_artigo.reset();
+                                    Loading();
+                                });
+                        }
+                    });
                     $("#modalview-insert-artigo [data-role='content']").data("kendoMobileScroller").reset();
                 }
             },
@@ -319,15 +352,89 @@ function open_ModalInsertArtigo() {
                 $("#img-upload").attr("src",'');
             },
             reset: function () {
-                this.set("IMAGEM", null);
                 this.set("DESCRICAO", null);
+                this.set("IMAGEM", null);
+                //this.set("TIPO", null);
                 this.set("QUANTIDADE", 1);
+                this.set("ID", null);
+                this.set('aux_tipo', null);
+                this.set('aux_id_tipo', null);
                 $("#img-upload").attr("src", '');
                 $("#descArtigo").focus();
+            },
+            setData: function (data) {
+                if (data.FOTO) {
+                    var image = document.getElementById("img-upload");
+                    image.src = "data:image/jpeg;base64," + data.FOTO;
+                    obs_artigo.set("IMAGEM", data.FOTO);
+                }
+                obs_artigo.set('DESCRICAO', data.DESCRICAO);
+                obs_artigo.set('QUANTIDADE', data.QUANTIDADE);
+                obs_artigo.set('ID', data.ID);
+                $("#ddTipoArtigo").data("kendoDropDownList").select(data.ID_TIPO - 1);
+            },
+        });
+    } else
+        obs_artigo.reset();    
+    if (!$("#ddTipoArtigo").data("kendoDropDownList")) {
+        $("#ddTipoArtigo").kendoDropDownList({
+            filter: "startswith",
+            dataTextField: "DESC_TIPO",
+            dataValueField: "ID",
+            dataSource: new kendo.data.DataSource({
+                pageSize: 20,
+                serverPaging: true,
+                transport: {
+                    read: function (options) {
+                        startTransation().then(function (tr) {
+                            if (tr) {
+                                tr.executeSql("SELECT id, desc_tipo FROM tipo", [], function (tx, resultSet) {
+                                    try {
+                                        var data = [];
+                                        if (resultSet.rows.length > 0) {
+                                            for (var x = 0; x < resultSet.rows.length; x++) {
+                                                data.push(new TIPO(resultSet.rows.item(x)));
+                                            }
+                                        }
+                                        options.success(data);
+                                    } catch (ex) {
+                                        notificacao('Erro ao criar objecto [DropTipo]: ' + ex.message, 'error', 'Ups...');
+                                    }
+                                },
+                                function (tx, error) {
+                                    notificacao('SELECT error: ' + error.message, 'error', 'Ups...');
+                                });
+                            }
+                            else {
+                                var d = [{ id: 1,desc_tipo:"Tipo 1", descricao: "Tipo 1"},
+                                { id: 2, desc_tipo: "Tipo 1", descricao: "Tipo 2" },
+                                { id: 3, desc_tipo: "Tipo 1", descricao: "Tipo 3" },
+                                { id: 4, desc_tipo: "Tipo 1", descricao: "Tipo 4" }], data = [];
+                                for (var i = 0, length = d.length; i < length; i++) {
+                                    data.push(new TIPO(d[i]));
+                                }
+                                options.success(data);
+                            }
+                        });
+                    },
+                    schema: {
+                        model: {
+                            id: "ID",
+                            fields: {
+                                ID: { nullable: false, editable: false },
+                                DESC_TIPO:{nullable:false,editable:false },
+                                DESCRICAO: { type: "string", editable: false },
+                            }
+                        }
+                    },
+                },
+            }),
+            noDataTemplate: $("#dd-noDataTemplate").html(),
+            popup: {
+                position: "top center",
+                origin: "top center"
             }
         });
-    } else {
-        obs_artigo.reset();
     }
     kendo.bind($("#modalview-insert-artigo"), obs_artigo);
     obs_artigo.bind("change", function (e) {
@@ -336,10 +443,58 @@ function open_ModalInsertArtigo() {
                 this.set("hasIMAGEM", (this.get("IMAGEM")) ? true : false);
         }
     });
-    $("#descArtigo").focus();
+    delay(function () {
+        if (e.dataItem)
+            obs_artigo.setData(e.dataItem);
+        $("#descArtigo").focus();
+    }, 300);
     $("#qtdArtigo").TouchSpin({ min: 1, step: 1, maxboostedstep: false, });
+}
+function open_ModalInsertListDbTables(e) {
+    if (!$("#gridDbTabels").data("kendoGrid")) {
+        $("#gridDbTabels").kendoGrid({
+            mobile: "phone",
+            height: "100%",
+            scrollable: true,
+            //selectable: "cell",
+            dataSource: new kendo.data.DataSource({
+                //pageSize: 20,
+                //serverPaging: true,
+                transport: {
+                    read: function (options) {
+                        ListTables().then(function (results) {
+                            options.success(results);
+                        });
+                    },
+                },
+            }),
+            columns: [{
+                    title: "Tabela",
+                    field: "TABLE",
+            }],
+        });
+    } else {
+        $("#gridDbTabels").data("kendoGrid").dataSource.read();
+    }
 }
 /********************************************** CLOSE MODALS **********************************************/
 function close_ModalInsertArtigo() {
     $("#gridInventario").data("kendoGrid").dataSource.read();
+}
+/******************************************* OPEN ACTIONSHEETS ********************************************/
+/**********************************************************************************************************/
+function optionsClearData(e) {
+    var tabela = (typeof e != 'String') ? $(e.target).data("table") : e;
+    $confirm('Tem a certeza que pretende apagar TODOS os dados?', function (buttonIndex) {
+        if (buttonIndex == 1) {
+            clearTable(tabela).then(function () {
+                clearTable('tipo').then(function () {
+                    $("#gridInventario").data("kendoGrid").dataSource.read();
+                });
+            });
+        }
+    }, 'Confirmação', ['Sim', 'Não'], e);
+}
+function optionsListTables(e) {
+    openModalView(null, "modalview-list-db-tables");
 }
