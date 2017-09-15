@@ -8,7 +8,7 @@
     <TargetOsDescription>Windows 10.0</TargetOsDescription>
     <SolutionConfiguration>debug|arm</SolutionConfiguration>
     <PackageArchitecture>arm</PackageArchitecture>
-    <PackageIdentityName>03f86240-8cd2-11e7-8b4c-376a6c026d2c</PackageIdentityName>
+    <PackageIdentityName>5d7eb260-8e58-11e7-ba03-7719fb4ac0c7</PackageIdentityName>
     <PackageIdentityPublisher>CN=Apache Cordova Team</PackageIdentityPublisher>
     <IntermediateOutputPath>C:\Dev\Projectos\SplInvent\platforms\windows\build\windows\bld\</IntermediateOutputPath>
     <RemoteDeploymentType></RemoteDeploymentType>

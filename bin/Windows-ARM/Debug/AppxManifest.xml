@@ -7,8 +7,8 @@
 
     For more information on package manifest files, see http://go.microsoft.com/fwlink/?LinkID=241727
   -->
-  <Identity Name="com.cordova.splinvent" Publisher="CN=Apache Cordova Team" Version="0.1.1.1" ProcessorArchitecture="arm" />
-  <mp:PhoneIdentity PhoneProductId="03f86240-8cd2-11e7-8b4c-376a6c026d2c" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
+  <Identity Name="com.cordova.splinvent" Publisher="CN=Apache Cordova Team" Version="1.1.1.1" ProcessorArchitecture="arm" />
+  <mp:PhoneIdentity PhoneProductId="5d7eb260-8e58-11e7-ba03-7719fb4ac0c7" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>SplInvent</DisplayName>
     <PublisherDisplayName>Luis Silva</PublisherDisplayName>

@@ -33,7 +33,8 @@
             <header data-role="header">
                 <div data-role="navbar">
                     <span data-role="view-title"></span>
-                    <a data-align="right" data-icon="exit" data-role="button" onclick="exitFromApp()">Sair</a>
+                    <a data-align="left" data-icon="exit" data-role="button" onclick="exitFromApp()">Sair</a>
+                    <a data-align="right" data-icon="settings" data-role="button" data-table="inventario" data-rel="actionsheet" href="#actionsheetInventarioOpcoes">Opções</a>
                 </div>
             </header>
             <div id="parent">
@@ -47,6 +48,10 @@
                     <a data-icon="save" data-role="button" data-bind="visible: mode, click: gravarPicagem">Gravar</a>
                 </div>
             </div>
+            <ul id="actionsheetInventarioOpcoes" data-role="actionsheet" data-type="phone" data-open="onOpenActionSheetOpcoes">
+                <li><a style="color:darkred" data-action="optionsClearData">Limpar Dados</a></li>
+                <li><a data-action="optionsListTables">Manutenção de tabelas</a></li>
+            </ul>
         </div>
         <div id="modalview-insert-artigo" data-role="modalview" data-open="open_ModalInsertArtigo" data-close="close_ModalInsertArtigo" style="width:100%;height:100%;display:none">
             <div data-role="header">
@@ -69,6 +74,12 @@
                         <input id="qtdArtigo" data-min="0" name="qtdArtigo" type="number" class="form-control input-lg" data-bind="value: QUANTIDADE" required validationmessage="Obrigatório" />
                     </div>
                     <span class="k-invalid-msg" data-for="qtdArtigo"></span>
+                </div>
+                <div class="col-xs-12 col-sm-6">
+                    <div class="form-group ddTipoArtigo">
+                        <label for="tipoArtigo">Tipo</label>
+                        <input id="ddTipoArtigo" style="width:100%;height:46px"/>
+                    </div>
                 </div>
                 <div class="col-xs-12">
                     <div class="form-group">
@@ -107,19 +118,43 @@
                 </div>
             </div>
         </div>
+        <div id="modalview-list-db-tables" data-role="modalview" data-open="open_ModalInsertListDbTables" 
+             data-close="close_ModalInsertListDbTables" style="width:100%;height:100%;display:none">
+            <div data-role="header">
+                <div data-role="navbar">
+                    <a data-role="button" data-align="left" data-icon="reply" data-click="closeModalView" data-viewname="modalview-list-db-tables">Voltar</a>
+                    <span>Tabelas</span>
+                </div>
+            </div>
+            <div id="parent">
+                <div id="gridDbTabels"></div>
+            </div>
+        </div>
+
         <script id="gridInventario-command-template" type="text/x-kendo-template">
-            #if(!obs_inventario.get("mode")){#
-                #if(QUANTIDADE_PICADA < 1){#
+            #if(QUANTIDADE_PICADA < 1){#
+                #if(!obs_inventario.get("mode")){#
                     <a class="k-button k-grid-remover" data-id="#:ID#">
                         <i class="fa fa-trash-o" aria-hidden="true"></i>
                         Remover
                     </a>
+                #}else{#
+                    <div style="text-align:center">
+                        <input type="checkbox" data-id="#:ID#" data-qtd="#:QUANTIDADE#" />
+                    </div>
                 #}#
-            #}else{#
-                <div style="text-align:center">
-                    <input type="checkbox" data-id="#:ID#"/>
+            #}else{# 
+                <div class="text-center">
+                    <i class="fa fa-check fa-3x color-DarkGreen" aria-hidden="true"></i>
                 </div>
             #}#
+        </script>
+        <script id="dd-noDataTemplate" type="text/x-kendo-tmpl">
+            <div>
+                Não foi encontrado. Quer adicionar - '#: instance.filterInput.val() #' ?
+            </div>
+            <br />
+            <button class="k-button" onclick="dd_addNewTipo('#: instance.element[0].id #', '#: instance.filterInput.val() #')">Adicionar</button>
         </script>
         <script type="text/javascript" src="cordova.js"></script>
         <script type="text/javascript" src="scripts/platformOverrides.js"></script>
@@ -143,7 +178,8 @@
                 if (typeof cordova !== 'undefined') {
                     db = window.sqlitePlugin.openDatabase({ name: 'invent.db', location: 'default' });
                     db.transaction(function (tx) {
-                        tx.executeSql('CREATE TABLE IF NOT EXISTS inventario (id integer primary key, descricao text, tipo text, quantidade integer, quantidade_picada integer, foto text)');
+                        tx.executeSql('CREATE TABLE IF NOT EXISTS inventario (id integer primary key, descricao text, id_tipo integer, tipo text, quantidade integer, quantidade_picada integer, foto text)');
+                        tx.executeSql('CREATE TABLE IF NOT EXISTS tipo (id integer primary key, desc_tipo text, descricao text)');
                     }, function (error) {
                         console.log('Error creating table: ' + error.message);
                         dfd.resolve();
@@ -151,7 +187,7 @@
                         console.log('Table Created');
                         dfd.resolve();
                     });
-                    dataDirectory = cordova.file.externalApplicationStorageDirectory;
+                    //dataDirectory = cordova.file.externalApplicationStorageDirectory;
                     if (cordova.plugins && cordova.plugins.Keyboard) {
                         window.addEventListener('native.keyboardhide', function (e) {
                             if (window.StatusBar) {
@@ -167,9 +203,13 @@
                             console.log("!!ERROR!! IMMERSIVEMODE");
                         });
                     }
-                    if (cordova.file && cordova.file.externalApplicationStorageDirectory)
-                        dataDirectory = cordova.file.externalApplicationStorageDirectory;                    
-
+                    if (cordova.file) {
+                        if (isMobile.Android()) {
+                            dataDirectory = cordova.file.externalApplicationStorageDirectory;
+                        } else if (isMobile.Windows() || isMobile.iOS()) {
+                            dataDirectory = cordova.file.dataDirectory;
+                        }
+                    }
                 } else {
                     dfd.resolve();
                 }
